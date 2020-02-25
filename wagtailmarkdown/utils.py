@@ -11,11 +11,12 @@ import warnings
 
 from django.utils.encoding import smart_text
 from django.utils.safestring import mark_safe
+from django.conf import settings
 
 import bleach
 import markdown
 
-from .mdx import linker, tables
+from .mdx import linker
 from .warnings import WagtailMarkdownDeprecationWarning
 
 
@@ -132,22 +133,28 @@ def _get_bleach_kwargs():
 
 def _get_markdown_kwargs():
     markdown_kwargs = {}
-    markdown_kwargs['extensions'] = [
-        'extra',
-        'codehilite',
-        tables.TableExtension(),
-        linker.LinkerExtension({
-             '__default__': 'wagtailmarkdown.mdx.linkers.page',
-             'page:': 'wagtailmarkdown.mdx.linkers.page',
-             'image:': 'wagtailmarkdown.mdx.linkers.image',
-             'doc:': 'wagtailmarkdown.mdx.linkers.document',
-         })
-    ]
-    markdown_kwargs['extension_configs'] = {
-        'codehilite': [
-            ('guess_lang', False),
+    try:
+        markdown_kwargs['extensions'] = settings.WAGTAIL_MARKDOWN_EXTENSIONS
+    except AttributeError:
+        markdown_kwargs['extensions'] = [
+            'extra',
+            'codehilite',
+            linker.LinkerExtension({
+                 '__default__': 'wagtailmarkdown.mdx.linkers.page',
+                 'page:': 'wagtailmarkdown.mdx.linkers.page',
+                 'image:': 'wagtailmarkdown.mdx.linkers.image',
+                 'doc:': 'wagtailmarkdown.mdx.linkers.document',
+             })
         ]
-    }
+
+    try:
+        markdowns_kwargs['extension_configs'] = settings.WAGTAIL_MARKDOWN_EXTENSIONS_CONFIG
+    except:
+        markdown_kwargs['extension_configs'] = {
+            'codehilite': [
+                ('guess_lang', False),
+            ]
+        }
     markdown_kwargs['output_format'] = 'html5'
     return markdown_kwargs
 
